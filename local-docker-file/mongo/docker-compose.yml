@@ -1,0 +1,50 @@
+# ------------------------------------------------------------------------------------
+# 1. docker-compose -p microservices-comp3095-ecommerce -f docker-compose.yml up -d
+#     --- This command will start the container in detached mode without rebuilding the images (If they already exist)
+#
+# 2. docker-compose -p microservices-comp3095-ecommerce -f docker-compose.yml up -d --build
+# --- This command forces the rebuild of images, even if the images already exist, before starting the containers
+#
+# ------------------------------------------------------------------------------------
+
+version: '3.9'
+
+services:
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - ./data/mongo/products:/data/db
+      - ./init/mongo/docker-entrypoint-initdb.d/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - spring
+
+  mongo-express:
+    image: mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=password
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+    container_name: local-mongo-express
+    depends_on:
+      - mongodb
+    networks:
+      - spring
+
+networks:
+  spring:
+    driver: bridge
+
+
+
+
+
+

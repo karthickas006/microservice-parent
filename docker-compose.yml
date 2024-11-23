@@ -1,0 +1,99 @@
+# ------------------------------------------------------------------------------------
+# 1. docker-compose -p microservices-comp3095-ecommerce -f docker-compose.yml up -d
+#     --- This command will start the container in detached mode without rebuilding the images (If they already exist)
+#
+# 2. docker-compose -p microservices-comp3095-ecommerce -f docker-compose.yml up -d --build
+# --- This command forces the rebuild of images, even if the images already exist, before starting the containers
+#
+# ------------------------------------------------------------------------------------
+
+version: '3.9'
+
+services:
+  product-services:
+    image: product-service
+    ports:
+      - "8085:8084"
+    build:
+      context: ./product-service
+      dockerfile: ./Dockerfile
+    container_name: product-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - mongodb
+    networks:
+      - spring
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - ./data/mongo/products:/data/db
+      - ./init/mongo/docker-entrypoint-initdb.d/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - spring
+
+  mongo-express:
+    image: mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=password
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+    container_name: mongo-express
+    depends_on:
+      - mongodb
+    networks:
+      - spring
+
+  postgres:
+    image: postgres
+    ports:
+      - "5433:5432"
+    container_name: postgres-order
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=order-service
+    volumes:
+      - ./data/order:/var/lib/postgresql/data
+      - ./init/order/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  postgres_inventory:
+    image: postgres
+    ports:
+      - "5434:5432"
+    container_name: postgres-inventory
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=inventory-service
+    volumes:
+      - ./data/inventory:/var/lib/postgresql/data
+      - ./init/inventory/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  pgadmin:
+    image: dpage/pgadmin4
+    ports:
+      - "8888:80"
+    container_name: pgadmin-single
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=user@domain.ca
+      - PGADMIN_DEFAULT_PASSWORD=password
+
+networks:
+  spring:
+    driver: bridge
+
+
+
+
+
+
